@@ -20,7 +20,7 @@ import ama_library.ama_class as cl
 import ama_library.utilities as au
 import ama_library.plotting as ap
 import sys
-sys.path.append('./code/')
+sys.path.append('../../code/')
 from auxiliary_functions import *
 import time
 
@@ -29,6 +29,8 @@ start = time.time()
 ##############
 #### LOAD DATA
 ##############
+
+dataDir = '../../data/'
 
 # SPECIFY WHAT DATASET TO LOAD
 downSample = 2  # Factor by which pixels are downsampled in input stimuli (also, dnK)
@@ -39,13 +41,13 @@ dspStd = '00'
 
 # LOAD DATA
 # Training
-data = spio.loadmat('./data/ama_inputs/'
+data = spio.loadmat(dataDir + 'ama_inputs/'
   f'S3D-nStim_0500-spdStep_{spdStep}-maxSpd_{maxSpd}-dspStd_{dspStd}-'
   f'dnK_{downSample}-loom_{looming}-TRN.mat')
 s, ctgInd, ctgVal = unpack_matlab_data(
     matlabData=data, ctgIndName='ctgIndMotion', ctgValName='Xmotion')
 # Testing
-dataTst = spio.loadmat('./data/ama_inputs/'
+dataTst = spio.loadmat(dataDir + 'ama_inputs/'
   f'S3D-nStim_0300-spdStep_{spdStep}-maxSpd_{maxSpd}-dspStd_{dspStd}-'
   f'dnK_{downSample}-loom_{looming}-TST.mat')
 sTst, ctgIndTst, ctgValTst = unpack_matlab_data(
@@ -147,7 +149,7 @@ for rn in range(len(respNoiseVec)):
     import torch.nn.utils.parametrize as parametrize
     ama.to('cpu')
     parametrize.remove_parametrizations(ama, "f", leave_parametrized=True)
-    dirName = './data/trained_models/'
+    dirName = dataDir + 'trained_models/'
     fileNameModel = f'ama_3D_speed_empirical_dnK_{downSample}_maxSpd_{maxSpd}_' + \
       f'spdStep_{spdStep}_noise_{respNoiseVar:.4f}_loom_{looming}_dspStd_{dspStd}.pt'
     torch.save(ama, dirName + fileNameModel)

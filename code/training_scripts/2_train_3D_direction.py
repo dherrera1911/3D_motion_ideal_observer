@@ -7,6 +7,7 @@
 # by the user.
 #
 # Code author: Daniel Herrera-Esposito, dherrera1911 at gmail dot com
+##########################################
 
 
 ##############
@@ -20,7 +21,7 @@ import ama_library.ama_class as cl
 import ama_library.utilities as au
 import ama_library.plotting as ap
 import sys
-sys.path.append('./code/')
+sys.path.append('../../code/')
 from auxiliary_functions import *
 import time
 
@@ -30,11 +31,13 @@ start = time.time()
 #### LOAD DATA
 ##############
 
+dataDir = '../../data/'
+
 # SPECIFY WHAT DATASET TO LOAD
 downSample = 2  # Factor by which pixels are downsampled in input stimuli
 spd = '0.15'  # Max speed in input stimuli
 degStep = '7.5'   # Step in deg between classes
-looming = '0'  # Whether looming is included in stimuli
+looming = '1'  # Whether looming is included in stimuli
 dspStd = '00'
 
 # LOAD DATA
@@ -150,7 +153,7 @@ for rn in range(len(respNoiseVec)):
     import torch.nn.utils.parametrize as parametrize
     ama.to('cpu')
     parametrize.remove_parametrizations(ama, "f", leave_parametrized=True)
-    dirName = './data/trained_models/'
+    dirName = dataDir + 'trained_models/'
     fileName = f'ama_3D_dir_empirical_dnK_{downSample}_spd_{spd}_' + \
       f'degStep_{degStep}_noise_{respNoiseVar:.4f}_loom_{looming}_dspStd_{dspStd}.pt'
     torch.save(ama, dirName + fileName)

@@ -154,6 +154,9 @@ for rn in range(len(respNoiseVec)):
     ama.to('cpu')
     parametrize.remove_parametrizations(ama, "f", leave_parametrized=True)
     dirName = dataDir + 'trained_models/'
+    # If directory does not exist, create it
+    if not os.path.exists(dirName):
+        os.makedirs(dirName, exist_ok=True)
     fileName = f'ama_3D_dir_empirical_dnK_{downSample}_spd_{spd}_' + \
       f'degStep_{degStep}_noise_{respNoiseVar:.4f}_loom_{looming}_dspStd_{dspStd}.pt'
     torch.save(ama, dirName + fileName)

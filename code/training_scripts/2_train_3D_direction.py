@@ -21,6 +21,7 @@ import ama_library.ama_class as cl
 import ama_library.utilities as au
 import ama_library.plotting as ap
 import sys
+import os
 sys.path.append('../../code/')
 from auxiliary_functions import *
 import time

@@ -42,13 +42,13 @@ dspStd = '00'
 
 # LOAD DATA
 # Training
-data = spio.loadmat('./data/ama_inputs/'
+data = spio.loadmat(dataDir + 'ama_inputs/'
   f'D3D-nStim_0500-spd_{spd}-degStep_{degStep}-dspStd_{dspStd}-'
   f'dnK_{downSample}-loom_{looming}-TRN.mat')
 s, ctgInd, ctgVal = unpack_matlab_data(
     matlabData=data, ctgIndName='ctgIndMotion', ctgValName='Xmotion')
 # Testing
-dataTst = spio.loadmat('./data/ama_inputs/'
+dataTst = spio.loadmat(dataDir + 'ama_inputs/'
   f'D3D-nStim_0300-spd_{spd}-degStep_{degStep}-dspStd_{dspStd}-'
   f'dnK_{downSample}-loom_{looming}-TST.mat')
 sTst, ctgIndTst, ctgValTst = unpack_matlab_data(

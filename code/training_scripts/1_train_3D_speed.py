@@ -21,7 +21,7 @@ import ama_library.utilities as au
 import ama_library.plotting as ap
 import sys
 import os
-sys.path.append('../../code/')
+sys.path.append('../')
 from auxiliary_functions import *
 import time
 
@@ -31,7 +31,8 @@ start = time.time()
 #### LOAD DATA
 ##############
 
-dataDir = '../../data/'
+dataDir = '../../data/ama_inputs/'
+modelDir = '../../data/trained_models/'
 
 # SPECIFY WHAT DATASET TO LOAD
 downSample = 2  # Factor by which pixels are downsampled in input stimuli (also, dnK)
@@ -42,17 +43,11 @@ dspStd = '00'
 
 # LOAD DATA
 # Training
-data = spio.loadmat(dataDir + 'ama_inputs/'
+data = spio.loadmat(dataDir +
   f'S3D-nStim_0500-spdStep_{spdStep}-maxSpd_{maxSpd}-dspStd_{dspStd}-'
   f'dnK_{downSample}-loom_{looming}-TRN.mat')
 s, ctgInd, ctgVal = unpack_matlab_data(
     matlabData=data, ctgIndName='ctgIndMotion', ctgValName='Xmotion')
-# Testing
-dataTst = spio.loadmat(dataDir + 'ama_inputs/'
-  f'S3D-nStim_0300-spdStep_{spdStep}-maxSpd_{maxSpd}-dspStd_{dspStd}-'
-  f'dnK_{downSample}-loom_{looming}-TST.mat')
-sTst, ctgIndTst, ctgValTst = unpack_matlab_data(
-    matlabData=dataTst, ctgIndName='ctgIndMotion', ctgValName='Xmotion')
 # Extract some properties of the dataset
 nStim = s.shape[0]
 df = s.shape[1]
@@ -88,21 +83,15 @@ lrStepSize = 10  # Number of epochs between lr decay
 # Convert indices and categories to Z-motion speeds
 ctgVal = polar_2_Z(ctgVal)
 ctgVal, ctgInd = au.sort_categories(ctgVal=ctgVal, ctgInd=ctgInd)
-ctgValTst = polar_2_Z(ctgValTst)
-ctgValTst, ctgIndTst = au.sort_categories(ctgVal=ctgValTst, ctgInd=ctgIndTst)
 
 # Convert intensity stimuli to contrast stimuli
 s = contrast_stim(s=s, nChannels=2)
-sTst = contrast_stim(s=sTst, nChannels=2)
 
 # Move data to available device
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 s = s.to(device)
 ctgInd = ctgInd.to(device)
 ctgVal = ctgVal.to(device)
-sTst = sTst.to(device)
-ctgIndTst = ctgIndTst.to(device)
-ctgValTst = ctgValTst.to(device)
 
 # Put data into Torch data loader tools
 trainDataset = TensorDataset(s, ctgInd)
@@ -133,7 +122,7 @@ for rn in range(len(respNoiseVec)):
         nEpochs=nEpochs, model=ama, trainDataLoader=trainDataLoader,
         lossFun=lossFun, opt_fun=opt_fun, nPairs=nPairs,
         scheduler_fun=scheduler_fun, seedsByPair=seedsByPair,
-        sTst=sTst, ctgIndTst=ctgIndTst, printProg=True)
+        printProg=True)
     # Save model and training dictionary
     trainingDict = {
         'nEpochs': nEpochs, 'batchSize': batchSize,
@@ -147,19 +136,9 @@ for rn in range(len(respNoiseVec)):
         'respCov': ama.respCov.detach().clone(),
         'respCovNoiseless:': ama.respCovNoiseless.detach().clone()}
 
-    import torch.nn.utils.parametrize as parametrize
-    ama.to('cpu')
-    parametrize.remove_parametrizations(ama, "f", leave_parametrized=True)
-    dirName = dataDir + 'trained_models/'
-    # If directory does not exist, create it
-    if not os.path.exists(dirName):
-        os.makedirs(dirName, exist_ok=True)
-    fileNameModel = f'ama_3D_speed_empirical_dnK_{downSample}_maxSpd_{maxSpd}_' + \
-      f'spdStep_{spdStep}_noise_{respNoiseVar:.4f}_loom_{looming}_dspStd_{dspStd}.pt'
-    torch.save(ama, dirName + fileNameModel)
     fileNameDict = f'ama_3D_speed_empirical_dnK_{downSample}_maxSpd_{maxSpd}_' + \
       f'spdStep_{spdStep}_noise_{respNoiseVar:.4f}_loom_{looming}_dspStd_{dspStd}_dict.pt'
-    torch.save(trainingDict, dirName + fileNameDict)
+    torch.save(trainingDict, modelDir + fileNameDict)
 
 end = time.time()
 

@@ -33,7 +33,7 @@ dnK = 2
 spdStep = '0.100'
 maxSpd = '2.50'
 noise = '0.0100' # 0.0014, 0.0035, 0.0070, 0.0084, 0.0105, 0.0123, 0.0175, 0.0350
-loom = '0'
+loom = '1'
 dspStd = '00'
 plotDirName = f'./plots/3D_speed_contrast/dnK{dnK}_spd{maxSpd}_noise{noise}_' + \
     f'spdStep{spdStep}_loom{loom}/'

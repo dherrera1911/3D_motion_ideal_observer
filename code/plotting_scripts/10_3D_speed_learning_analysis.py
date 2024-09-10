@@ -28,7 +28,7 @@ import os
 savePlots = True
 spdStep = '0.100'
 maxSpd = '2.50'
-loom = '0'
+loom = '1'
 dspStd = '00'
 for dnK in [2]:
     for noise in ['0.0100']:
@@ -41,7 +41,7 @@ for dnK in [2]:
               f'noise{noise}_spdStep{spdStep}/'
             os.makedirs(plotDirName, exist_ok=True)
             # Load the model
-            trainingDict = torch.load(modelFile)
+            trainingDict = torch.load(modelFile, map_location=torch.device('cpu'))
 
             # Extract relevant variables
             nPairs = trainingDict['nPairs']

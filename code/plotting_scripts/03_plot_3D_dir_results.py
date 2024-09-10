@@ -45,8 +45,6 @@ os.makedirs(plotDirName, exist_ok=True)
 
 # SPECIFY THE INDICES OF DIFFERENT FILTER SUBSETS
 allFiltersInd = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-#lrFiltersInd = np.array([0, 1, 2, 3, 4])
-#bfFiltersInd = np.array([5, 6, 7, 8, 9])
 lrFiltersInd = np.array([0, 1, 2, 3])
 bfFiltersInd = np.array([4, 5, 6, 7, 8, 9])
 # Put different filters indices in a list
@@ -60,13 +58,13 @@ samplesPerStim = 10 # Number of noise samples for stimulus initialization
 
 # LOAD STIMULUS DATASET
 # Training
-data = spio.loadmat('./data/ama_inputs/direction_looming/'
+data = spio.loadmat('./data/ama_inputs/'
   f'D3D-nStim_0500-spd_{spd}-degStep_{degStep}-'
   f'dspStd_{dspStd}-dnK_{dnK}-loom_{loom}-TRN.mat')
 s, ctgInd, ctgVal = unpack_matlab_data(
     matlabData=data, ctgIndName='ctgIndMotion', ctgValName='Xmotion')
 # Testing
-dataTst = spio.loadmat('./data/ama_inputs/direction_looming/'
+dataTst = spio.loadmat('./data/ama_inputs/'
   f'D3D-nStim_0300-spd_{spd}-degStep_{degStep}-'
   f'dspStd_{dspStd}-dnK_{dnK}-loom_{loom}-TST.mat')
 sTst, ctgIndTst, ctgValTst = unpack_matlab_data(
@@ -83,7 +81,6 @@ nCtg = len(ctgVal)
 # Convert intensity stimuli to contrast stimuli
 s = contrast_stim(s=s, nChannels=2)
 sTst = contrast_stim(s=sTst, nChannels=2)
-
 
 ##############
 #### INITIALIZE TRAINED MODEL
@@ -109,7 +106,7 @@ ama = init_trained_ama(amaDict=trainingDict, sAll=s, ctgInd=ctgInd,
 plotTypeDirName = f'{plotDirName}0_noisy_stim/'
 os.makedirs(plotTypeDirName, exist_ok=True)
 
-plotStimuli = False
+plotStimuli = True
 nStimPlot = 2
 if plotStimuli:
     for k in range(nCtg):
@@ -300,23 +297,6 @@ for si in range(len(speedsList)):
         plt.close()
     else:
         plt.show()
-
-
-# Plot covariance lines 
-respCov = ama.respCovNoiseless.clone().detach()
-# Make the subplots axes
-fig, ax = plt.subplots(nrows=10, ncols=10, figsize=(10,10))
-ap.plot_covariance_values(axes=ax, covariance=respCov, color='black',
-                          xVal=ctgVal, size=2)
-# Set tick font size
-for a in range(len(fig.axes)):
-    fig.axes[a].tick_params(axis='both', which='major', labelsize=10)
-if savePlots:
-    plt.savefig(fname=f'{plotTypeDirName}covariances_noisy.png',
-          bbox_inches='tight', pad_inches=0.1)
-    plt.close()
-else:
-    plt.show()
 
 
 ###############
@@ -591,53 +571,6 @@ else:
     plt.show()
 
 
-
-###############
-# 4) PLOT COVARIANCE FUNCTIONS
-###############
-
-#plotTypeDirName = f'{plotDirName}4_covariance_plots/'
-#os.makedirs(plotTypeDirName, exist_ok=True)
-#
-#ap.plot_covariance_values(covariances=[ama.respCov.detach()],
-#                          xVal=[ctgVal], sizeList=[3], showPlot=False)
-#if savePlots:
-#    plt.savefig(fname=f'{plotTypeDirName}covariances_noisy.png',
-#          bbox_inches='tight', pad_inches=0)
-#    plt.close()
-#else:
-#    plt.show()
-#
-#ap.plot_covariance_values(covariances=[ama.respCovNoiseless.detach()],
-#                          xVal=[ctgVal], sizeList=[3], showPlot=False)
-#if savePlots:
-#    plt.savefig(fname=f'{plotTypeDirName}covariances_noiseless.png',
-#          bbox_inches='tight', pad_inches=0)
-#    plt.close()
-#else:
-#    plt.show()
-#
-#
-#ap.plot_covariance_values(covariances=[ama.respCov.detach()],
-#                          xVal=[ctgValPlot], sizeList=[4], showPlot=False)
-#if savePlots:
-#    plt.savefig(fname=f'{plotTypeDirName}covariances_litX.png',
-#          bbox_inches='tight', pad_inches=0)
-#    plt.close()
-#else:
-#    plt.show()
-#
-#
-#ap.plot_covariance_values(covariances=[ama.respCovNoiseless.detach()],
-#                          xVal=[ctgValPlot], sizeList=[4], showPlot=False)
-#if savePlots:
-#    plt.savefig(fname=f'{plotTypeDirName}covariances_noiseless_litX.png',
-#          bbox_inches='tight', pad_inches=0)
-#    plt.close()
-#else:
-#    plt.show()
-
-
 ###############
 # 5) PLOT POSTERIORS
 ###############
@@ -667,38 +600,8 @@ ctgIndRep = torch.cat(ctgIndRep)
 # Find the interpolated category indices and values
 ctgValInterp = ama.ctgVal
 ctgIndInterp = find_interp_indices(ctgVal, ctgValInterp, ctgIndRep)
-#ctg2plot = torch.tensor([12, 15, 18, 21, 24])
-#ctg2plot = torch.tensor([12, 14, 16, 18, 20, 22, 24])
 ctg2plot = torch.arange(0, 25)
 ctg2plotInterp = (ctg2plot) * (interpPoints + 1)
-
-# # Plot the posteriors
-# quantiles = [0.16, 0.84]
-# for i in range(len(ctg2plot)):
-#     fig, ax = plt.subplots(figsize=(3.5,3.5))
-#     inds = ctgIndInterp == ctg2plotInterp[i]
-#     postCtg = posteriors[inds,:]
-#     # Subsample posteriors
-#     postCtg = postCtg[::3,:]
-#     # Get posterior statistics
-#     ap.plot_posterior(ax=ax, posteriors=postCtg,
-#               ctgVal=ctgValInterp, trueVal=ctgVal[ctg2plot[i]])
-#     # Set axes title
-#     # If it is the first row, remove x ticks
-#     ax.set_xlabel('Direction (deg)')
-#     # If it is first column, set y label
-#     ax.set_ylabel('Posterior probability')
-#     # Remove y ticks
-#     ax.set_yticks([])
-#     # Set title
-#     ax.set_title(f'Direction {ctgVal[ctg2plot[i]]:.2f} deg', fontsize=12)
-#     if savePlots:
-#         plt.savefig(fname=f'{plotTypeDirName}1_posterior_dir_{ctgVal[ctg2plot[i]]:.2f}.png',
-#               bbox_inches='tight', pad_inches=0)
-#         plt.close()
-#     else:
-#         plt.show()
-
 
 # Plot the likelihood neurons
 for i in range(len(ctg2plot)):
@@ -729,67 +632,4 @@ for i in range(len(ctg2plot)):
         plt.close()
     else:
         plt.show()
-
-
-###############
-# PLOT ENERGY NEURON TUNING CURVES
-###############
-
-# Get responses
-repeats = 5
-responses = []
-ctgIndRep = []
-for i in range(repeats):
-    responses.append(ama.get_responses(s=sTst).detach())
-    ctgIndRep.append(ctgIndTst)
-responses = torch.cat(responses)
-ctgIndRep = torch.cat(ctgIndRep)
-
-# Plot filter pairs as squared and added
-nFilters = 10
-
-respSq = responses**2
-for j in range(nFilters):
-    for i in range(j):
-        energyResp = respSq[:, i] + respSq[:, j]
-        energyStats = au.get_estimate_statistics(energyResp, ctgIndRep,
-                                                   quantiles=quantiles)
-        fig, ax = plt.subplots(figsize=(3.5,3.5))
-        multFactor = 1
-        ax.fill_between(ctgVal, energyStats['lowCI']*multFactor,
-                         energyStats['highCI']*multFactor, color='black', alpha=0.1)
-        ax.plot(ctgVal, energyStats['estimateMean']*multFactor, color='black')
-        # If it is the first row, remove x ticks
-        ax.set_xlabel('Direction (deg)')
-        # If it is first column, set y label
-        ax.set_ylabel('Response')
-        # Remove y ticks
-        ax.set_yticks([])
-        ax.set_title(f'Filter pair: {i}-{j}', fontsize=12)
-        plt.savefig(fname=f'{plotTypeDirName}3_sum_energy_neuron_filters_{i}-{j}.png',
-              bbox_inches='tight', pad_inches=0)
-        plt.close()
-
-
-# Plot filter pairs as multiplied
-for j in range(nFilters):
-    for i in range(j):
-        energyResp = responses[:, i] * responses[:, j]
-        energyStats = au.get_estimate_statistics(energyResp, ctgIndRep,
-                                                   quantiles=quantiles)
-        fig, ax = plt.subplots(figsize=(3.5,3.5))
-        multFactor = 1
-        ax.fill_between(ctgVal, energyStats['lowCI']*multFactor,
-                         energyStats['highCI']*multFactor, color='black', alpha=0.1)
-        ax.plot(ctgVal, energyStats['estimateMean']*multFactor, color='black')
-        # If it is the first row, remove x ticks
-        ax.set_xlabel('Direction (deg)')
-        # If it is first column, set y label
-        ax.set_ylabel('Response')
-        # Remove y ticks
-        ax.set_yticks([])
-        ax.set_title(f'Filter pair: {i}-{j}', fontsize=12)
-        plt.savefig(fname=f'{plotTypeDirName}4_mult_energy_neuron_filters_{i}-{j}.png',
-              bbox_inches='tight', pad_inches=0)
-        plt.close()
 

@@ -27,7 +27,7 @@ import os
 
 savePlots = True
 spd = '0.15'
-loom = '0'
+loom = '1'
 dspStd = '00'
 
 for dnK in [2]:
@@ -42,7 +42,7 @@ for dnK in [2]:
             os.makedirs(plotDirName, exist_ok=True)
 
             # Load the model
-            trainingDict = torch.load(modelFile)
+            trainingDict = torch.load(modelFile, map_location='cpu')
 
             # Extract relevant variables
             nPairs = trainingDict['nPairs']

@@ -96,7 +96,7 @@ highSpdCi = {'All':[], 'Mono':[], 'Bino':[]}
 
 # If we're not adapting statistics, load original dataset
 if not adaptStats:
-    data = spio.loadmat('./data/ama_inputs/speed_looming/'
+    data = spio.loadmat('./data/ama_inputs/'
       f'S3D-nStim_0500-spdStep_{spdStep}-maxSpd_{maxSpd}-'
       f'dspStd_00-dnK_{dnK}-loom_{loom}-TRN.mat')
     s, ctgInd, ctgVal = unpack_matlab_data(
@@ -109,7 +109,7 @@ if not adaptStats:
 for dInd in range(len(dspStdVec)):
     dspStd = dspStdVec[dInd]
     # Load the dataset with this disparity std
-    data = spio.loadmat('./data/ama_inputs/speed_looming_dspVar/'
+    data = spio.loadmat('./data/ama_inputs/speed_disparity_variability/'
         f'S3D-nStim_0300-spdStep_{spdStep}-maxSpd_{maxSpd}-'
         f'dspStd_{dspStd}-dnK_{dnK}-loom_{loom}-TST.mat')
     sPer, ctgIndPer, ctgValPer = unpack_matlab_data(
@@ -137,6 +137,7 @@ for dInd in range(len(dspStdVec)):
         if adaptStats:
             sInit = sPer
             ctgIndInit = ctgIndPer
+            ctgVal = ctgValPer
         else:
             sInit = s
             ctgIndInit = ctgInd
@@ -289,43 +290,3 @@ for s in range(2):
                 bbox_inches='tight', pad_inches=0.1)
     plt.close()
 
-
-## Plot the scatter of filter responses to the stimuli
-#for dInd in range(len(dspStdVec)):
-#    dspStd = dspStdVec[dInd]
-#    # Load the dataset with this disparity std
-#    data = spio.loadmat('./data/ama_inputs/speed_looming_dspVar/'
-#        f'S3D-nStim_0300-spdStep_{spdStep}-maxSpd_{maxSpd}-'
-#        f'dspStd_{dspStd}-dnK_{dnK}-loom_{loom}-TST.mat')
-#    sPer, ctgIndPer, ctgValPer = unpack_matlab_data(
-#        matlabData=data, ctgIndName='ctgIndMotion', ctgValName='Xmotion')
-#    # Preprocess the dataset
-#    # Convert indices and categories to Z-motion speeds
-#    ctgValPer = polar_2_Z(ctgValPer)
-#    ctgValPer, ctgIndPer = au.sort_categories(ctgVal=ctgValPer, ctgInd=ctgIndPer)
-#    # Extract some properties of the dataset
-#    nStim = sPer.shape[0]
-#    # Convert intensity stimuli to contrast stimuli
-#    sPer = contrast_stim(s=sPer, nChannels=2)
-#    statsSubtype = {}
-#    inds2plot = np.arange(start=ctgTrim, stop=nCtg-ctgTrim)
-#    # Get the estimates for the different types of filters
-#    for ft in range(len(filterType)):
-#        # Extract the name and indices of the filters
-#        tName = filterType[ft]
-#        fInds = filterIndList[ft]
-#        # Initialize the AMA model with random filters
-#        if adaptStats:
-#            ama = cl.AMA_emp(sAll=sPer, ctgInd=ctgIndPer, nFilt=len(fInds),
-#                    respNoiseVar=respNoiseVar, pixelCov=pixelNoiseVar,
-#                    ctgVal=ctgValPer, samplesPerStim=samplesPerStim, nChannels=2)
-#        else:
-#            ama = cl.AMA_emp(sAll=sAll, ctgInd=ctgInd, nFilt=len(fInds),
-#                    respNoiseVar=respNoiseVar, pixelCov=pixelNoiseVar,
-#                    ctgVal=ctgVal, samplesPerStim=samplesPerStim, nChannels=2)
-#        # Assign the learned filters to the AMA object
-#        filterSubset = trainingDict['filters'][fInds]
-#        ama.assign_filter_values(fNew=filterSubset)
-#        ama.update_response_statistics()
-#
-#

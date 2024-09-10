@@ -95,7 +95,7 @@ nCtg = len(ctgVal)
 ##########
 
 ### Make uncorrelated iovd dataset
-dataTst = spio.loadmat('./data/ama_inputs/speed_looming/'
+dataTst = spio.loadmat('./data/ama_inputs/'
   f'S3D-nStim_0300-spdStep_{spdStep}-maxSpd_{maxSpd}-'
   f'dspStd_00-dnK_{dnK}-loom_{loom}-TST.mat')
 sTst, ctgIndTst, ctgValTst = unpack_matlab_data(

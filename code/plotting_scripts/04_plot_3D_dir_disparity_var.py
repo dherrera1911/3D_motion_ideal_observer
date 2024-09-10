@@ -24,7 +24,6 @@ from auxiliary_functions import *
 import copy
 import os
 
-
 ##############
 #### LOAD AND TIDY STIMULUS DATASET
 ##############
@@ -84,8 +83,7 @@ pixelNoiseVar = trainingDict['pixelNoiseVar']
 # GET MODEL PERFORMANCE FOR EACH DISPARITY-VARIABILITY DATASET
 ###############
 
-
-plotTypeDirName = f'{plotDirName}7_performance_periphery/'
+plotTypeDirName = f'{plotDirName}6_performance_periphery/'
 os.makedirs(plotTypeDirName, exist_ok=True)
 plt.rcParams.update({'font.size': 18, 'font.family': 'Nimbus Sans'})
 
@@ -100,7 +98,7 @@ lrSummary = {'All':[], 'LR':[], 'BF':[]}
 if not adaptStats:
     ## LOAD STIMULUS DATASET TO GET CATEGORIES
     # Training
-    data = spio.loadmat('./data/ama_inputs/direction_looming/'
+    data = spio.loadmat('./data/ama_inputs/'
       f'D3D-nStim_0500-spd_{spd}-degStep_{degStep}-'
       f'dspStd_{dspStd}-dnK_{dnK}-loom_{loom}-TRN.mat')
     s, ctgInd, ctgVal = unpack_matlab_data(
@@ -115,7 +113,7 @@ if not adaptStats:
 for dInd in range(len(dspStdVec)):
     dspStd = dspStdVec[dInd]
     # Load the dataset with this disparity std
-    data = spio.loadmat('./data/ama_inputs/direction_looming_dspVar/'
+    data = spio.loadmat('./data/ama_inputs/direction_disparity_variability/'
       f'D3D-nStim_0300-spd_{spd}-degStep_{degStep}-'
       f'dspStd_{dspStd}-dnK_{dnK}-loom_{loom}-TST.mat')
     sPer, ctgIndPer, ctgValPer = unpack_matlab_data(

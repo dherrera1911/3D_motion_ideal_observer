@@ -18,17 +18,15 @@ generate the paper plots
 
 Stimuli datasets (synthesized with code in `stimulus_synthesis`)
 can be downloaded from the companion [OSF repository](https://osf.io/w9mpe/).
-The datasets should be placed in directory `data/ama_inputs/`.
-The script `data/download_training_data.sh` downloads the
-datasets and places them in the correct directory if ran from
-`data/` directory (it uses the `osf` command line tool
-[from osfclient](https://github.com/osfclient/osfclient)),
-but this can be done manually as well.
+Run the script `data/download_stimuli.sh` from the main directory
+to download the datasets to the correct directory, or
+download them manually from the OSF repository
+(the script uses the package
+[osfclient](https://github.com/osfclient/osfclient)).
 
-The model filters learned with the code in `training_scripts` are 
-provided in `data/trained_models/`. Training the filters for
-one task with the training parameters used here takes about 2
-hours on the CPU of a modern laptop.
+Pre-trained model filters are provided in `data/trained_models/`.
+Training the filters for one task with the training parameters used
+here takes about 2 hours on the CPU of a modern laptop.
 
 Using the provided filters and downloading the data,
 the code in `plotting_scripts` can be used to reproduce the
@@ -40,9 +38,10 @@ If the data is in place, the scripts in `plotting_scripts` can
 be run from main directory to reproduce the figures in the paper.
 
 The scripts for learning the filters in `training_scripts` can
-be run from the main directory as well.
+be run from the main directory as well (although this is
+optional, since pre-trained filters are provided).
 
-The scripts have a description of what they do at the
+The scripts above have a description of what they do at the
 beginning of the file. The names of the scripts are
 also self-explanatory.
 
@@ -61,5 +60,13 @@ the paper is in the directory
 
 ## Dependencies
 
-TO DO
+The code for training the models and plotting the results
+are written in Python 3. All of the analysis revolves around the
+Python [AMA package](https://github.com/dherrera1911/accuracy_maximization_analysis).
+All dependencies can be installed in a new conda environment
+with the file `environment.yml` in the main directory.
+
+The code for synthesizing the stimuli is written in Matlab.
+The code uses the Matlab [BurgeLab toolbox](https://jburge.psych.upenn.edu/code.html).
+
 

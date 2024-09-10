@@ -30,14 +30,10 @@ bPreWndw = 0;
 
 fdirBV = './generated_stim/BV_videos/';
 
-dspArcMinAll = 0
-%LRSIpatchCL2BVXZ(natORflt, numImg, stmPerLvlDTB, PszXYbffr, PszXY, ...
-%  dspArcMinAll, spdMeterPerSec, spdDirDeg, tgtPosZMeter, zeroDspTime, bPreWndw, ...
-%  projInfo, lensInfo, sensInfo, wndwInfo, rndSdInfo, localORserver, bPLOTbino);
-
 LRSIpatchCL2BVXZ_variableDisp(natORflt, numImg, stmPerLvlDTB, PszXYbffr, PszXY, ...
-  dspStdArcMin, spdMeterPerSec, spdDirDeg, tgtPosZMeter, zeroDspTime, bPreWndw, ...
-  projInfo, lensInfo, sensInfo, wndwInfo, rndSdInfo, fdirBV);
+  dspStdArcMin, spdMeterPerSec, spdDirDeg, tgtPosZMeter, zeroDspTime, ...
+  bWithLooming, projInfo, lensInfo, sensInfo, rndSdInfo, fdirBV);
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -62,7 +58,7 @@ bPreWndw = 1;
   stmPerLvlTrn, bPreWndw, projInfo, lensInfo, sensInfo, wndwInfo, trnORtst, ...
   indSmpStmExl, rndSdInfo, fdirBV);
 
-fname = 'S3D-nStim_0500-spdStep_0.100-maxSpd_2.50-dspStd_00-dnK_2-TRN.mat'
+fname = 'S3D-nStim_0500-spdStep_0.100-maxSpd_2.50-dspStd_10-dnK_2-loom_1-TRN.mat'
 fdir = './generated_stim/S3D_struct/';
 save([fdir, fname], '-struct', 'S3Dtrn');
 
@@ -73,7 +69,7 @@ if stmPerLvlTst>0
       dspStdArcMin, spdMeterPerSec, spdDirDeg, tgtPosZMeter, imgDim, dnK, ...
       stmPerLvlTst, bPreWndw, projInfo, lensInfo, sensInfo, wndwInfo, 'TST', ...
       indSmpTrn, rndSdInfo, fdirBV);
-    fnameTst = 'S3D-nStim_0300-spdStep_0.100-maxSpd_2.50-dspStd_00-dnK_2-TST.mat'
+    fnameTst = 'S3D-nStim_0300-spdStep_0.100-maxSpd_2.50-dspStd_10-dnK_2-loom_1-TST.mat'
     save([fdir, fnameTst], '-struct', 'S3Dtst');
 end
 

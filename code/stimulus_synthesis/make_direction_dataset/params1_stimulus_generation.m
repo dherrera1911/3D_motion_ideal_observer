@@ -31,7 +31,7 @@ dnK          = 2;
 %   for 'FLT', instead of using the 2 original images, R is just
 %   a duplicated and shifted version of L image
 natORflt = 'FLT';
-bWithLooming = 0;
+bWithLooming = 1;
 
 % Set whether the stimulus starts at 0 disparity, or
 % if it has 0 disparity in the middle frame

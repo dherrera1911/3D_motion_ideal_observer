@@ -32,6 +32,7 @@ dnK          = 2;
 %   for 'FLT', instead of using the 2 original images, R is just
 %   a duplicated and shifted version of L image
 natORflt = 'FLT';
+bWithLooming = 1;
 
 % Set whether the stimulus starts at 0 disparity, or
 % if it has 0 disparity in the middle frame
@@ -68,7 +69,7 @@ imgNums = 1:98;
 % Number of initial patches per LRSI image. Some will be discarded
 stmPerImg = 30; 
 % Size of patch to crop, with buffer to generate moving stim
-PszXYbffr = [6 1].*[PszXY];
+PszXYbffr = [6 3].*[PszXY];
 % Random Seeds
 rndSdCP = 1; % rndSd for selecting potential corresponding points
 rndSdGD = 1; % rndSd for selecting good      corresponding points

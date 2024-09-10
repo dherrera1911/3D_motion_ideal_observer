@@ -53,6 +53,21 @@ def unpack_matlab_data(matlabData, ctgIndName='ctgInd', ctgValName='X'):
     return (s, ctgInd, ctgVal)
 
 
+def init_trained_ama(amaDict, sAll, ctgInd, ctgVal, samplesPerStim=10):
+    """ Initialize an AMA object with the parameters given in a
+    saved dictionary"""
+    # Initialize random AMA model
+    respNoiseVar = amaDict['respNoiseVar']
+    pixelNoiseVar = amaDict['pixelNoiseVar']
+    nFilt = amaDict['nPairs'] * 2
+    ama = cl.AMA_emp(sAll=sAll, ctgInd=ctgInd, nFilt=nFilt, respNoiseVar=respNoiseVar,
+            pixelCov=pixelNoiseVar, ctgVal=ctgVal,
+            samplesPerStim=samplesPerStim, nChannels=2)
+    ama.assign_filter_values(fNew=amaDict['filters'])
+    ama.update_response_statistics()
+    return ama
+
+
 def contrast_stim(s, nChannels=1):
     """Take a batch of stimuli and convert to Weber contrast stimulus
     That is, subtracts the stimulus mean, and then divides by the mean.
@@ -333,8 +348,32 @@ def mean_interpolation(mean, nPoints=1):
     return torch.tensor(meanInterp, dtype=torch.float32)
 
 
+def interpolate_ama(ama, interpPoints):
+    """ Interpolate the statistics and category values of an AMA model.
+    -----------------
+    Arguments:
+    -----------------
+      - ama: AMA model object
+      - interpPoints: Number of points to interpolate between each pair of
+        categories.
+    -----------------
+    Outputs:
+    -----------------
+      - ama: AMA model object with interpolated statistics.
+    """
+    ama.respCov = covariance_interpolation(covariance=ama.respCov.detach(),
+                                           nPoints=interpPoints)
+    ama.respMean = mean_interpolation(mean=ama.respMean.detach(),
+                                      nPoints=interpPoints)
+    ama.ctgVal = torch.as_tensor(linear_interpolation(y=ama.ctgVal,
+                                                      nPoints=interpPoints),
+                                 dtype=torch.float32)
+    return ama
+
+
 def interpolate_circular_ama(ama, interpPoints=1):
-    """ Interpolate the statistics of a circular variable AMA model.
+    """ Interpolate the statistics and category values of an AMA model
+    with a circular variable.
     It prepends and appends the statistics of the model to itself, and then
     interpolates. Thus, the first and last categories do not have a border
     effect, but are adjacent to repeats of each other.
@@ -361,7 +400,7 @@ def interpolate_circular_ama(ama, interpPoints=1):
     respCovDup = covariance_interpolation(covariance=respCovDup,
                                           nPoints=interpPoints)
     respMeanDup = mean_interpolation(mean=respMeanDup, nPoints=interpPoints)
-    ctgValDup = torch.tensor(linear_interpolation(y=ctgValDup, nPoints=interpPoints),
+    ctgValDup = torch.as_tensor(linear_interpolation(y=ctgValDup, nPoints=interpPoints),
                              dtype=torch.float32)
     p1 = int(nCtg*(interpPoints+1))
     p2 = int((respCovDup.shape[0] - p1 + interpPoints + 1)/2)

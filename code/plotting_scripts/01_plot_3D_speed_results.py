@@ -38,7 +38,7 @@ dnK = 2
 spdStep = '0.100'
 maxSpd = '2.50'
 noise = '0.0100' # 0.0014, 0.0035, 0.0070, 0.0084, 0.0105, 0.0123, 0.0175, 0.0350
-loom = '0'
+loom = '1'
 dspStd = '00'
 plotDirName = f'./plots/3D_speed/dnK{dnK}_spd{maxSpd}_noise{noise}_' + \
     f'spdStep{spdStep}_loom{loom}/'
@@ -57,13 +57,13 @@ samplesPerStim = 10 # Number of noise samples for stimulus initialization
 
 # LOAD STIMULUS DATASET
 # Training
-data = spio.loadmat('./data/ama_inputs/'
+data = spio.loadmat('./data/ama_inputs/speed_looming/'
   f'S3D-nStim_0500-spdStep_{spdStep}-maxSpd_{maxSpd}-'
   f'dspStd_00-dnK_{dnK}-loom_{loom}-TRN.mat')
 s, ctgInd, ctgVal = unpack_matlab_data(
     matlabData=data, ctgIndName='ctgIndMotion', ctgValName='Xmotion')
 # Testing
-dataTst = spio.loadmat('./data/ama_inputs/'
+dataTst = spio.loadmat('./data/ama_inputs/speed_looming/'
   f'S3D-nStim_0300-spdStep_{spdStep}-maxSpd_{maxSpd}-'
   f'dspStd_00-dnK_{dnK}-loom_{loom}-TST.mat')
 sTst, ctgIndTst, ctgValTst = unpack_matlab_data(
@@ -97,15 +97,9 @@ modelFile = f'./data/trained_models/' \
     f'spdStep_{spdStep}_noise_{noise}_loom_{loom}_dspStd_{dspStd}_dict.pt'
 trainingDict = torch.load(modelFile, map_location=torch.device('cpu'))
 
-# Initialize random AMA model
-respNoiseVar = trainingDict['respNoiseVar']
-pixelNoiseVar = trainingDict['pixelNoiseVar']
-ama = cl.AMA_emp(sAll=s, ctgInd=ctgInd, nFilt=10, respNoiseVar=respNoiseVar,
-        pixelCov=pixelNoiseVar, ctgVal=ctgVal,
-        samplesPerStim=samplesPerStim, nChannels=2)
-# Assign the learned filter values to the model
-ama.assign_filter_values(fNew=trainingDict['filters'])
-ama.update_response_statistics()
+# Initialize ama model
+ama = init_trained_ama(amaDict=trainingDict, sAll=s, ctgInd=ctgInd,
+                       ctgVal=ctgVal, samplesPerStim=samplesPerStim)
 
 ##############
 #### PLOT MODEL OUTPUTS
@@ -183,7 +177,7 @@ if savePlots:
 # 2) PLOT RESPONSE ELLIPSES
 ###############
 
-plotTypeDirName = f'{plotDirName}3_covariances/'
+plotTypeDirName = f'{plotDirName}2_covariances/'
 os.makedirs(plotTypeDirName, exist_ok=True)
 
 addRespNoise = False # Add response noise to the model
@@ -272,53 +266,48 @@ else:
 # 3) GET MODEL ESTIMATES WITH FILTER SUBSETS
 ###############
 
-plotTypeDirName = f'{plotDirName}2_estimates/'
+plotTypeDirName = f'{plotDirName}3_estimates/'
 os.makedirs(plotTypeDirName, exist_ok=True)
 
 # Trim the edges that have border effects in estimation
 inds2plot = torch.arange(ctgTrim, nCtg-ctgTrim)
-estimates = []
-ctgIndList = []
 statsList = []
 repeats = 5
 
 plt.rcParams.update({'font.size': 28, 'font.family': 'Nimbus Sans'})
 
 for k in range(len(filterIndList)):
+    # Initialize ama model
+    ama = init_trained_ama(amaDict=trainingDict, sAll=s, ctgInd=ctgInd,
+                           ctgVal=ctgVal, samplesPerStim=samplesPerStim)
     # Select filter subset
     filterSubset = trainingDict['filters'][filterIndList[k],:]
     # Assign to ama
     ama.assign_filter_values(fNew=filterSubset)
     ama.update_response_statistics()
     # Interpolate class statistics
-    ama.respCov = covariance_interpolation(covariance=ama.respCov.detach(),
-                                           nPoints=interpPoints)
-    ama.respMean = mean_interpolation(mean=ama.respMean.detach(),
-                                      nPoints=interpPoints)
-    ama.ctgVal = torch.tensor(linear_interpolation(y=ctgVal, nPoints=interpPoints),
-                              dtype=torch.float32)
-
+    ama = interpolate_ama(ama, interpPoints=interpPoints)
     # Get estimates, with multiple noise samples
-    estTemp = []
-    ctgIndTemp = []
+    estimates = []
+    ctgIndReps = []
     for r in range(repeats):
         print('Repeat: ', r)
-        estTemp.append(ama.get_estimates(s=sTst, method4est='MAP',
+        estimates.append(ama.get_estimates(s=sTst, method4est='MAP',
                                            addRespNoise=True).detach())
-        ctgIndTemp.append(ctgIndTst)
+        ctgIndReps.append(ctgIndTst)
 
     # Tidy estimates into lists
-    estTemp = torch.tensor(torch.cat(estTemp), dtype=torch.float32)
-    ctgIndTemp = torch.cat(ctgIndTemp)
-    estimates.append(estTemp)
-    ctgIndList.append(ctgIndTemp)
+    estimates = torch.tensor(torch.cat(estimates), dtype=torch.float32)
+    ctgIndReps = torch.cat(ctgIndReps)
     # Get statistics of estimates
-    statsList.append(au.get_estimate_statistics(estimates=estimates[k],
-                                                ctgInd=ctgIndList[k],
+    statsList.append(au.get_estimate_statistics(estimates=estimates,
+                                                ctgInd=ctgIndReps,
                                                 quantiles=[0.16, 0.84]))
     errorInterval = torch.cat((statsList[k]['lowCI'].reshape(-1,1),
             statsList[k]['highCI'].reshape(-1,1)), dim=-1).transpose(0,1)
-    # Plot the estimates and CI
+    ##########
+    # Plot the estimates median and CI
+    ##########
     fig, ax = plt.subplots()
     plot_estimate_statistics(ax=ax, estMeans=statsList[k]['estimateMedian'][inds2plot],
         errorInterval=errorInterval[:,inds2plot], ctgVal=ctgVal[inds2plot], color=filterColor[k])
@@ -338,16 +327,21 @@ for k in range(len(filterIndList)):
     else:
         plt.show()
 
-    # Get ctgInd in inds2plot
-    ctgIndPlot = ctgIndList[k][torch.isin(ctgIndList[k], inds2plot)]
-    estPlot = estimates[k][torch.isin(ctgIndList[k], inds2plot)]
-    # Make density plot
+    # Keep only estimates for categories we want to plot
+    ctgIndPlot = ctgIndReps[torch.isin(ctgIndReps, inds2plot)]
+    estPlot = estimates[torch.isin(ctgIndReps, inds2plot)]
+
+    ##########
+    # Plot scatter of individual estimates 
+    ##########
     jitter = torch.rand(len(ctgIndPlot)) * 0.05 - 0.025
     sns.scatterplot(x=ctgVal[ctgIndPlot]+jitter, y=estPlot,
                     color=filterColor[k], alpha=0.1)
     sns.scatterplot(x=ctgVal[inds2plot],
                     y=statsList[k]['estimateMedian'][inds2plot],
                     color=filterColor[k], s=30) 
+    plt.xlabel('3D speed (m/s)')
+    plt.ylabel('3D speed estimates (m/s)')
     # Set plot limits
     plt.ylim([ctgVal[inds2plot].min(), ctgVal[inds2plot].max()])
     plt.xlim([ctgVal[inds2plot].min(), ctgVal[inds2plot].max()])
@@ -397,16 +391,9 @@ for ft in range(len(filterType)):
     ama.assign_filter_values(fNew=filterSubset)
     ama.update_response_statistics()
     # Interpolate class statistics
-    if statsNoise:
-        ama.respCov = covariance_interpolation(covariance=ama.respCov.detach(),
-                                               nPoints=interpPoints)
-    else:
-        ama.respCov = covariance_interpolation(covariance=ama.respCovNoiseless.detach(),
-                                               nPoints=interpPoints)
-    ama.respMean = mean_interpolation(mean=ama.respMean.detach(),
-                                      nPoints=interpPoints)
-    ama.ctgVal = torch.tensor(linear_interpolation(y=ctgVal, nPoints=interpPoints),
-                              dtype=torch.float32)
+    if not statsNoise:
+        ama.respCov = ama.respCovNoiseless.detach()
+    ama = interpolate_ama(ama, interpPoints=interpPoints)
     # Obtain the estimates
     estimates = []
     ctgIndList = []
@@ -466,85 +453,142 @@ else:
 plotTypeDirName = f'{plotDirName}5_posteriors/'
 os.makedirs(plotTypeDirName, exist_ok=True)
 
+plt.rcParams.update({'font.size': 14, 'font.family': 'Nimbus Sans'})
+#for k in range(len(filterIndList)):
+k = 0 # Only use all filters
+# Select filter subset
+fInds = filterIndList[k]
+filterSubset = trainingDict['filters'][fInds]
+statsNoise = True # Use statistics that include response noise
 
-for k in range(len(filterIndList)):
-    # Make interpolated ama model
-    # Select filter subset
-    filterSubset = trainingDict['filters'][fInds]
-    # Assign to ama
-    ama.assign_filter_values(fNew=filterSubset)
-    ama.update_response_statistics()
-    # Interpolate class statistics
-    if statsNoise:
-        ama.respCov = covariance_interpolation(covariance=ama.respCov.detach(),
-                                               nPoints=interpPoints)
-    else:
-        ama.respCov = covariance_interpolation(covariance=ama.respCovNoiseless.detach(),
-                                               nPoints=interpPoints)
-    ama.respMean = mean_interpolation(mean=ama.respMean.detach(),
-                                      nPoints=interpPoints)
-    ama.ctgVal = torch.tensor(linear_interpolation(y=ctgVal, nPoints=interpPoints),
-                              dtype=torch.float32)
-    # Compute posteriors
-    posteriors = ama.get_posteriors(s=sTst).detach()
-    # Find the interpolated category indices and values
-    ctgValInterp = ama.ctgVal
-    ctgIndInterp = find_interp_indices(ctgVal, ctgValInterp, ctgIndTst)
-    ctg2plotInterp = (ctg2plot) * (interpPoints + 1)
-    # Initialize figure with subplots
-    nCols = 3
-    nRows = 2
-    fig, ax = plt.subplots(nrows=nRows, ncols=nCols, figsize=(12,6))
-    for i in range(len(ctg2plot)):
-        inds = ctgIndInterp == ctg2plotInterp[i]
-        postCtg = posteriors[inds,:]
-        # Plot the posteriors
-        ap.plot_posterior(ax=ax.flatten()[i], posteriors=postCtg,
-                  ctgVal=ctgValInterp, trueVal=ctgVal[ctg2plot[i]])
-        # Set axes title
-        ax.flatten()[i].set_title(f'{ctgVal[ctg2plot[i]]:.1f} m/s')
-        # If it is the first row, remove x ticks
-        if i < nCols:
-            ax.flatten()[i].set_xticks([])
-        else:
-            ax.flatten()[i].set_xlabel('Speed (m/s)')
-        # If it is first column, set y label
-        if i % nCols == 0:
-            ax.flatten()[i].set_ylabel('Posterior probability')
-        # Remove y ticks
-        ax.flatten()[i].set_yticks([])
-    # Set figure size
-    fig.set_size_inches(13, 3)
-    if savePlots:
-        plt.savefig(fname=f'{plotTypeDirName}posteriors{filterType[k]}.png',
-              bbox_inches='tight', pad_inches=0)
-        plt.close()
-    else:
-        plt.show()
+# Initialize ama model
+ama = init_trained_ama(amaDict=trainingDict, sAll=s, ctgInd=ctgInd,
+                       ctgVal=ctgVal, samplesPerStim=samplesPerStim)
+# Interpolate class statistics
+if not statsNoise:
+    ama.respCov = ama.respCovNoiseless.detach()
+ama = interpolate_ama(ama, interpPoints=interpPoints)
+ctg2plotInterp = (ctg2plot) * (interpPoints + 1)
+ctgValInterp = ama.ctgVal
 
-    fig, ax = plt.subplots(nrows=nRows, ncols=nCols, figsize=(12,6))
-    for i in range(len(ctg2plot)):
-        # Class posteriors
-        posteriorCtg = posteriors[:, ctg2plotInterp[i]]
-        # Plot response of likelihood neurons
-        ap.plot_posterior_neuron(ax=ax.flatten()[i],
-                                 posteriorCtg=posteriorCtg,
-                                 ctgInd=ctgIndTst, ctgVal=ctgVal,
-                                 trueVal=ctgVal[ctg2plot[i]])
-        # If it is the first row, remove x ticks
-        if i < nCols:
-            ax.flatten()[i].set_xticks([])
-        else:
-            ax.flatten()[i].set_xlabel('Speed (m/s)')
-        # If it is first column, set y label
-        if i % nCols == 0:
-            ax.flatten()[i].set_ylabel('Likelihood neuron response')
-        # Remove y ticks
-        ax.flatten()[i].set_yticks([])
-    if savePlots:
-        plt.savefig(fname=f'{plotTypeDirName}likelihood_neurons_{filterType[k]}.png',
-              bbox_inches='tight', pad_inches=0)
-        plt.close()
-    else:
-        plt.show()
+# Compute posteriors
+nRep = 5
+posteriors = []
+ctgIndRep = []
+for r in range(nRep):
+    print('Repeat: ', r)
+    #posteriors.append(ama.get_posteriors(s=sTst).detach())
+    posteriors.append(torch.exp(ama.get_ll(s=sTst).detach()))
+    ctgIndRep.append(ctgIndTst)
+posteriors = torch.cat(posteriors)
+ctgIndRep = torch.cat(ctgIndRep)
+# Find the interpolated category indices and values
+ctgIndInterp = find_interp_indices(ctgVal, ctgValInterp, ctgIndTst)
+# Repeat the category indices number of repetitions
+ctgIndInterp = ctgIndInterp.repeat(nRep)
+
+## Plot posteriors average
+#for i in range(len(ctg2plot)):
+#    fig, ax = plt.subplots(figsize=(3.5,3.5))
+#    inds = ctgIndInterp == ctg2plotInterp[i]
+#    postCtg = posteriors[inds,:]
+#    # Plot the posteriors
+#    ap.plot_posterior(ax=ax, posteriors=postCtg,
+#              ctgVal=ctgValInterp, trueVal=ctgVal[ctg2plot[i]])
+#    # Set axes title
+#    # If it is the first row, remove x ticks
+#    ax.set_xlabel('Speed (m/s)')
+#    # If it is first column, set y label
+#    ax.set_ylabel('Posterior probability')
+#    # Remove y ticks
+#    ax.set_yticks([])
+#    # Set title
+#    ax.set_title(f'Speed {ctgVal[ctg2plot[i]]:.2f} m/s', fontsize=12)
+#    if savePlots:
+#        plt.savefig(fname=f'{plotTypeDirName}posterior_spd_{ctgVal[ctg2plot[i]]:.2f}.png',
+#              bbox_inches='tight', pad_inches=0)
+#        plt.close()
+#    else:
+#        plt.show()
+
+
+# Plot single posterior
+fig = plt.figure(figsize=(10,2.8))
+nStim = 1801
+plt.plot(ctgValInterp, posteriors[nStim, :], color='black', lw=2)
+plt.xlabel('Preferred 3D speed (m/s)')
+plt.ylabel('Likelihood')
+plt.yticks([])
+plt.xlim([-2, 2])
+fig.tight_layout()
+plt.savefig(fname=f'{plotTypeDirName}posterior_single.png',
+      bbox_inches='tight', pad_inches=0)
+plt.close()
+
+
+
+# Plot the likelihood neurons
+#for i in range(len(ctg2plot)):
+#    fig, ax = plt.subplots(figsize=(3.5,3.5))
+#    # Class posteriors
+#    posteriorCtg = posteriors[:, ctg2plotInterp[i]]
+#    # Plot response of likelihood neurons
+#    ctgIndTstRep = ctgIndTst.repeat(nRep)
+#    ap.plot_posterior_neuron(ax=ax, posteriorCtg=posteriorCtg,
+#                             ctgInd=ctgIndTstRep, ctgVal=ctgVal,
+#                             trueVal=None) #trueVal=ctgVal[ctg2plot[i]])
+#    # If it is the first row, remove x ticks
+#    ax.set_xlabel('Speed (m/s)')
+#    # If it is first column, set y label
+#    ax.set_ylabel('Likelihood neuron response')
+#    # Remove y ticks
+#    ax.set_yticks([])
+#    ax.set_title(f'Selectivity: {ctgVal[ctg2plot[i]]:.2f} m/s', fontsize=12)
+#    if savePlots:
+#        fig.tight_layout()
+#        plt.savefig(fname=f'{plotTypeDirName}likelihood_neuron_spd_{ctgVal[ctg2plot[i]]:.2f}.png',
+#              bbox_inches='tight', pad_inches=0.1)
+#        plt.close()
+#    else:
+#        plt.show()
+#
+
+# Compute likelihoods
+nRep = 5
+likelihoods = []
+for r in range(nRep):
+    print('Repeat: ', r)
+    #likelihoods.append(ama.get_posteriors(s=sTst).detach())
+    likelihoods.append(torch.exp(ama.get_ll(s=sTst).detach()))
+likelihoods = torch.cat(likelihoods)
+
+#ctg2plot = torch.tensor([9, 13, 17, 21, 25, 29, 33, 37, 41, 45])
+ctg2plot = torch.arange(5, 46, 2)
+ctg2plotInterp = (ctg2plot) * (interpPoints + 1)
+fig, ax = plt.subplots(figsize=(10,4))
+quantiles = [0.16, 0.84]
+for i in range(len(ctg2plot)):
+    # Class likelihoods
+    posteriorCtg = likelihoods[:, ctg2plotInterp[i]]
+    ctgIndTstRep = ctgIndTst.repeat(nRep)
+    # Get posterior median
+    posteriorStats = au.get_estimate_statistics(posteriorCtg, ctgIndTstRep,
+                                               quantiles=quantiles)
+    multFactor = 1/posteriorStats['estimateMedian'].max()
+    ax.fill_between(ctgVal, posteriorStats['lowCI']*multFactor,
+                     posteriorStats['highCI']*multFactor, color='black', alpha=0.1)
+    ax.plot(ctgVal, posteriorStats['estimateMedian']*multFactor, color='black')
+    ax.set_xlabel('3D speed (m/s)')
+    ax.set_yticks([])
+    ax.set_xlim([-2, 2])
+    ax.set_ylabel('Median response')
+
+if savePlots:
+    fig.tight_layout()
+    plt.savefig(fname=f'{plotTypeDirName}likelihood_neurons_spd_all.png',
+          bbox_inches='tight', pad_inches=0.1)
+    plt.close()
+else:
+    plt.show()
+
 

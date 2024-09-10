@@ -1,9 +1,12 @@
 ##########################################
 # This script plots the main results for the 3D speed task.
-# It plots both example preprocessed stimuli, the filters
-# learned by the model, and the performance of the model
-# at 3D speed estimation with different filter subsets.
-# It also plots some other figures not included in the paper
+# It plots:
+# 1) Example stimuli
+# 2) The learned filters
+# 3) The filter response distributions
+# 4) The performance of the model (confidence intervals) with different
+#    filter subsets
+# 5) The likelihood neuron tuning curves
 # 
 # Code author: Daniel Herrera-Esposito, dherrera1911 at gmail dot com
 ##########################################
@@ -12,21 +15,17 @@
 #### IMPORT PACKAGES
 ##############
 
+import os
 import scipy.io as spio
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
-from matplotlib import patches, colors, cm
-from torch.utils.data import TensorDataset, DataLoader
-import ama_library.ama_class as cl
 import ama_library.utilities as au
 import ama_library.plotting as ap
 import sys
 sys.path.append('./code/')
 from auxiliary_functions import *
 import seaborn as sns
-import copy
-import os
 
 ##############
 #### LOAD DATA

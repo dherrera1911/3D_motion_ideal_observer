@@ -1,3 +1,13 @@
+##########################################
+# This script tests the 3D-direction model using simulated responses
+# sampled from Gaussian distributions. This is a control
+# to test the effect of non-Gaussianity of the responses
+# on the results.
+#
+# Code author: Daniel Herrera-Esposito, dherrera1911 at gmail dot com
+##########################################
+
+
 ##############
 #### IMPORT PACKAGES
 ##############

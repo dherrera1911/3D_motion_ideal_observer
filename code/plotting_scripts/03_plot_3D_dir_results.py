@@ -1,5 +1,20 @@
 ##########################################
 # This script plots the main results for the 3D direction task.
+# It plots:
+# 1) Example stimuli
+# 2) The learned filters
+# 3) The filter response distributions
+# 5) The model estimates scatter plot
+# 6) Model performance (confidence intervals and towards-away accuracy)
+#   with different filter subsets
+# 7) The likelihood neuron tuning curves
+# 
+# Code author: Daniel Herrera-Esposito, dherrera1911 at gmail dot com
+##########################################
+
+
+##########################################
+# This script plots the main results for the 3D direction task.
 # It plots both example preprocessed stimuli, the filters
 # learned by the model, and the performance of the model
 # at 3D direction estimation with different filter subsets.

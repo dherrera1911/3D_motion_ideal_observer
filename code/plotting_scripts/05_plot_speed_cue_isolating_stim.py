@@ -2,7 +2,8 @@
 # This script analyzes the contribution of different binocular cues
 # (IOVD and CDOT) to the 3D speed task, by generating
 # cue-isolating stimuli and testing the previously trained model
-# on these stimuli.
+# on these stimuli. In particular, it plots the model's
+# performance at estimating the direction of towards/away of the stimulus
 # 
 # Code author: Daniel Herrera-Esposito, dherrera1911 at gmail dot com
 ##########################################

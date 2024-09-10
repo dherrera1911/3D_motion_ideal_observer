@@ -21,7 +21,7 @@ import ama_library.utilities as au
 import ama_library.plotting as ap
 import sys
 import os
-sys.path.append('../')
+sys.path.append('./code/')
 from auxiliary_functions import *
 import time
 
@@ -31,8 +31,8 @@ start = time.time()
 #### LOAD DATA
 ##############
 
-dataDir = '../../data/ama_inputs/'
-modelDir = '../../data/trained_models/'
+dataDir = './data/ama_inputs/'
+modelDir = './data/trained_models/'
 
 # SPECIFY WHAT DATASET TO LOAD
 downSample = 2  # Factor by which pixels are downsampled in input stimuli (also, dnK)

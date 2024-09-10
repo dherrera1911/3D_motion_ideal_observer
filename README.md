@@ -9,9 +9,9 @@ The code is organized into three main directories according to
 three different tasks:
 * `code/stimulus_synthesis/`: Generate naturalistic
 binocular videos used in the experiments
-* `code/training_scripts/`: Training ideal observer model (AMA).
-There's one script for each task
-* `code/plotting_scripts/`: Evaluating the trained AMA models and
+* `code/training_scripts/`: Train the ideal observer model (AMA)
+for the tasks. There's one script for each task
+* `code/plotting_scripts/`: Evaluate the trained AMA models and
 generate the paper plots
 
 ## Getting the data

@@ -57,13 +57,13 @@ samplesPerStim = 10 # Number of noise samples for stimulus initialization
 
 # LOAD STIMULUS DATASET
 # Training
-data = spio.loadmat('./data/ama_inputs/speed_looming/'
+data = spio.loadmat('./data/ama_inputs/'
   f'S3D-nStim_0500-spdStep_{spdStep}-maxSpd_{maxSpd}-'
   f'dspStd_00-dnK_{dnK}-loom_{loom}-TRN.mat')
 s, ctgInd, ctgVal = unpack_matlab_data(
     matlabData=data, ctgIndName='ctgIndMotion', ctgValName='Xmotion')
 # Testing
-dataTst = spio.loadmat('./data/ama_inputs/speed_looming/'
+dataTst = spio.loadmat('./data/ama_inputs/'
   f'S3D-nStim_0300-spdStep_{spdStep}-maxSpd_{maxSpd}-'
   f'dspStd_00-dnK_{dnK}-loom_{loom}-TST.mat')
 sTst, ctgIndTst, ctgValTst = unpack_matlab_data(
@@ -114,7 +114,7 @@ os.makedirs(plotTypeDirName, exist_ok=True)
 
 rawIms = torch.tensor(data.get('Iccd').transpose())
 
-nStimPlot = 3
+nStimPlot = 1
 for k in range(nCtg):
     # Step 1: filter rows by category
     indices = (ctgInd == k).nonzero(as_tuple=True)[0]
@@ -233,33 +233,6 @@ for n in range(len(fPairs)):
         plt.close()
     else:
         plt.show()
-
-# Plot covariance lines 
-# Make the subplots axes
-fig, ax = plt.subplots(nrows=10, ncols=10, figsize=(10,10))
-ap.plot_covariance_values(axes=ax, covariance=respCov, color='black',
-                          xVal=ctgVal, size=2)
-# Set tick font size
-for a in range(len(fig.axes)):
-    fig.axes[a].tick_params(axis='both', which='major', labelsize=10)
-if savePlots:
-    plt.savefig(fname=f'{plotTypeDirName}covariances_noisy{addRespNoise}.png',
-          bbox_inches='tight', pad_inches=0.1)
-    plt.close()
-else:
-    plt.show()
-
-
-# Plot interpolated covariance lines
-#covInterp = covariance_interpolation(covariance=respCov, nPoints=interpPoints)
-#xInterp = spline_interpolation(y=ctgVal, nPoints=interpPoints)
-## Make the subplots axes
-#fig, ax = plt.subplots(nrows=4, ncols=4, figsize=(10,10))
-#ap.plot_covariance_values(axes=ax, covariance=covInterp, color='black',
-#                          xVal=xInterp, size=2)
-#ap.plot_covariance_values(axes=ax, covariance=respCov, color='red',
-#                          xVal=ctgVal, size=4)
-#plt.show()
 
 
 ###############
@@ -384,9 +357,11 @@ for ft in range(len(filterType)):
     # Extract the name and indices of the filters
     tName = filterType[ft]
     fInds = filterIndList[ft]
-    # Make interpolated ama model
     # Select filter subset
     filterSubset = trainingDict['filters'][fInds]
+    # Initialize ama model
+    ama = init_trained_ama(amaDict=trainingDict, sAll=s, ctgInd=ctgInd,
+                           ctgVal=ctgVal, samplesPerStim=samplesPerStim)
     # Assign to ama
     ama.assign_filter_values(fNew=filterSubset)
     ama.update_response_statistics()
@@ -487,31 +462,6 @@ ctgIndInterp = find_interp_indices(ctgVal, ctgValInterp, ctgIndTst)
 # Repeat the category indices number of repetitions
 ctgIndInterp = ctgIndInterp.repeat(nRep)
 
-## Plot posteriors average
-#for i in range(len(ctg2plot)):
-#    fig, ax = plt.subplots(figsize=(3.5,3.5))
-#    inds = ctgIndInterp == ctg2plotInterp[i]
-#    postCtg = posteriors[inds,:]
-#    # Plot the posteriors
-#    ap.plot_posterior(ax=ax, posteriors=postCtg,
-#              ctgVal=ctgValInterp, trueVal=ctgVal[ctg2plot[i]])
-#    # Set axes title
-#    # If it is the first row, remove x ticks
-#    ax.set_xlabel('Speed (m/s)')
-#    # If it is first column, set y label
-#    ax.set_ylabel('Posterior probability')
-#    # Remove y ticks
-#    ax.set_yticks([])
-#    # Set title
-#    ax.set_title(f'Speed {ctgVal[ctg2plot[i]]:.2f} m/s', fontsize=12)
-#    if savePlots:
-#        plt.savefig(fname=f'{plotTypeDirName}posterior_spd_{ctgVal[ctg2plot[i]]:.2f}.png',
-#              bbox_inches='tight', pad_inches=0)
-#        plt.close()
-#    else:
-#        plt.show()
-
-
 # Plot single posterior
 fig = plt.figure(figsize=(10,2.8))
 nStim = 1801
@@ -525,41 +475,13 @@ plt.savefig(fname=f'{plotTypeDirName}posterior_single.png',
       bbox_inches='tight', pad_inches=0)
 plt.close()
 
-
-
-# Plot the likelihood neurons
-#for i in range(len(ctg2plot)):
-#    fig, ax = plt.subplots(figsize=(3.5,3.5))
-#    # Class posteriors
-#    posteriorCtg = posteriors[:, ctg2plotInterp[i]]
-#    # Plot response of likelihood neurons
-#    ctgIndTstRep = ctgIndTst.repeat(nRep)
-#    ap.plot_posterior_neuron(ax=ax, posteriorCtg=posteriorCtg,
-#                             ctgInd=ctgIndTstRep, ctgVal=ctgVal,
-#                             trueVal=None) #trueVal=ctgVal[ctg2plot[i]])
-#    # If it is the first row, remove x ticks
-#    ax.set_xlabel('Speed (m/s)')
-#    # If it is first column, set y label
-#    ax.set_ylabel('Likelihood neuron response')
-#    # Remove y ticks
-#    ax.set_yticks([])
-#    ax.set_title(f'Selectivity: {ctgVal[ctg2plot[i]]:.2f} m/s', fontsize=12)
-#    if savePlots:
-#        fig.tight_layout()
-#        plt.savefig(fname=f'{plotTypeDirName}likelihood_neuron_spd_{ctgVal[ctg2plot[i]]:.2f}.png',
-#              bbox_inches='tight', pad_inches=0.1)
-#        plt.close()
-#    else:
-#        plt.show()
-#
-
 # Compute likelihoods
 nRep = 5
 likelihoods = []
 for r in range(nRep):
     print('Repeat: ', r)
-    #likelihoods.append(ama.get_posteriors(s=sTst).detach())
-    likelihoods.append(torch.exp(ama.get_ll(s=sTst).detach()))
+    likelihoods.append(ama.get_posteriors(s=sTst).detach())
+    #likelihoods.append(torch.exp(ama.get_ll(s=sTst).detach()))
 likelihoods = torch.cat(likelihoods)
 
 #ctg2plot = torch.tensor([9, 13, 17, 21, 25, 29, 33, 37, 41, 45])

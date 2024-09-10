@@ -59,7 +59,7 @@ slntPriorType   = projInfo.slntPriorType;
 IPD = LRSIcameraIPD();
 
 % GET THE COMBINATIONS OF SPEEDS AND DIRECTIONS. FIRST ROW IS SPEED, SECOND IS ANGLE
-allMotions = combvec(spdMeterPerSec, spdDirDeg);
+allMotions = customCombvec(spdMeterPerSec, spdDirDeg);
 % Remove repeats of 0 speed motion
 spd0Ind = find(allMotions(1,:)==0);
 if (length(spd0Ind) > 1)

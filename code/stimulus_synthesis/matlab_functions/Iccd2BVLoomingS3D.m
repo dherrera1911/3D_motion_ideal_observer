@@ -1,7 +1,9 @@
 function [LccdMV, RccdMV] = Iccd2BVLoomingS3D(LccdBffr, RccdBffr, PszXY, ...
   tgtSpdMeter, tgtDirDeg, tgtPosZMeter, smpPerDeg, smpPerSec, durationMs, ...
-  zeroDspTime, IPDm, bPLOT)
+  zeroDspTime, dspInit, IPDm, bPLOT)
 
+%%%%
+%% Should we chage function to only take one Bffr instead of L and R?
 
 % INPUT HANDLING
 if ~exist('RccdBffr','var') || isempty(RccdBffr)
@@ -39,7 +41,6 @@ else
   zMtrPerSmp = 0;
 end
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % CCD MOVIE AT HIGH TEMPORAL RESOLUTION %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -51,13 +52,13 @@ RccdMV = zeros([fliplr(PszXY) 1 numSmp]);
 % TILT OF STIMULUS
 tiltDeg  = 0;
 slantDeg = 0;
-% DISTANCE OF THE PROJECTION PLANE IN METERS
 projPlZm = 1;
 % FUDGE TO EXAGGERATE PERSPECTIVE
 E = 1;
 
 % Coordinates of projection plane in meters
 projPlXm = projPlZm * tand( smpPos(smpPerDeg, PszXY(1))) * E;
+dspXmOffset = projPlZm * tand(dspInit);
 projPlYm = projPlZm * tand( smpPos(smpPerDeg, PszXY(2))) * E;
 [projPlXm, projPlYm] = meshgrid(projPlXm, projPlYm);
 
@@ -77,10 +78,10 @@ for i = 1:numSmp
   txtZmSmp = tgtPosZMeter + (i-1) * zMtrPerSmp;
   txtXmSmp = txtXm + (i-1) * xMtrPerSmp;
   [LccdMV(:,:,:,i)] = textureMapPlane2(LccdBffr, txtZmSmp, ...
-    txtXmSmp, txtYm, projPlZm, projPlXm, projPlYm, -IPDm/2, ...
+    txtXmSmp, txtYm, projPlZm, projPlXm - dspXmOffset/2, projPlYm, -IPDm/2, ...
     slantDeg, tiltDeg, 0);
   [RccdMV(:,:,:,i)] = textureMapPlane2(RccdBffr, txtZmSmp, ...
-    txtXmSmp, txtYm, projPlZm, projPlXm, projPlYm, +IPDm/2, ...
+    txtXmSmp, txtYm, projPlZm, projPlXm + dspXmOffset/2, projPlYm, +IPDm/2, ...
     slantDeg, tiltDeg, 0);
 end
 

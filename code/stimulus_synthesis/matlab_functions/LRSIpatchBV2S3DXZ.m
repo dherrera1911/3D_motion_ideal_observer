@@ -80,7 +80,7 @@ smpPerDeg     = sensInfo.smpPerDeg;
 smpPerSec     = sensInfo.smpPerSec;
 
 % GENERATE VECTOR OF MOTIONS TO PROCESS
-allMotions = combvec(spdMeterPerSec, spdDirDeg);
+allMotions = customCombvec(spdMeterPerSec, spdDirDeg);
 % Remove repeats of 0 speed motion
 spd0Ind = find(allMotions(1,:)==0);
 if (length(spd0Ind) > 1)

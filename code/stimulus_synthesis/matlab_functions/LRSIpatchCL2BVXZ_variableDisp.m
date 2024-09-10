@@ -63,7 +63,7 @@ smpPerSecHiRes = 480;
 upK = ceil(smpPerSecHiRes/smpPerSec);
 
 % GET THE COMBINATIONS OF SPEEDS AND DIRECTIONS. FIRST ROW IS SPEED, SECOND IS ANGLE
-allMotions = combvec(spdMeterPerSec, spdDirDeg);
+allMotions = customCombvec(spdMeterPerSec, spdDirDeg);
 % Remove repeats of 0 speed motion
 spd0Ind = find(allMotions(1,:)==0);
 if (length(spd0Ind) > 1)
@@ -140,14 +140,21 @@ for s = 1:size(allMotions, 2)
             LphtBffr = cropImageCtrInterp(LphtFll, CL.LitpRC(i,:), PszXYbffr, interpType);
             RphtBffr = cropImageCtrInterp(RphtFll, CL.RitpRC(i,:), PszXYbffr, interpType);
         elseif strcmp(natORflt,'FLT')  % FLAT    IMAGES
+            % Implement different sampling positions from eyes to match init disparity
+            cropOffset = [0, randomDsp]; 
+            if bWithLooming
+                % Looming implements different init dsp, sample same patch from
+                % left and right
+                cropOffset = [0, 0]; 
+            end
             if strcmp(CL.LorR(i),'L') % NOTE! Left eye images are repeated for flat structure
                 LphtBffr = cropImageCtrInterp(LphtFll, ...
                     CL.LitpRC(i,:), PszXYbffr, interpType);
                 RphtBffr = cropImageCtrInterp(LphtFll, ...
-                    CL.RitpRC(i,:)+[0,randomDsp], PszXYbffr, interpType);
+                    CL.RitpRC(i,:)+cropOffset, PszXYbffr, interpType);
             elseif strcmp(CL.LorR(i),'R') % NOTE! Left eye images are repeated for flat structure
                 LphtBffr = cropImageCtrInterp(RphtFll, ...
-                    CL.LitpRC(i,:)+[0,randomDsp], PszXYbffr, interpType);
+                    CL.LitpRC(i,:)+cropOffset, PszXYbffr, interpType);
                 RphtBffr = cropImageCtrInterp(RphtFll, ...
                     CL.RitpRC(i,:), PszXYbffr, interpType);
             end
@@ -160,12 +167,13 @@ for s = 1:size(allMotions, 2)
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         bPLOTmovie = 0;
         if ~bWithLooming
-          [LccdMV, RccdMV] = Iccd2BVS3D(LphtBffr, RphtBffr, PszXY, spdDegPerSecL, ...
-            spdDegPerSecR, smpPerDeg, smpPerSecHiRes, durationMs, zeroDspTime, bPLOTmovie);
+            [LccdMV, RccdMV] = Iccd2BVS3D(LphtBffr, RphtBffr, PszXY, spdDegPerSecL, ...
+              spdDegPerSecR, smpPerDeg, smpPerSecHiRes, durationMs, zeroDspTime, bPLOTmovie);
         else
-          [LccdMV, RccdMV] = Iccd2BVLoomingS3D(LphtBffr, RphtBffr, PszXY, tgtSpdMeter, ...
-            tgtDirDeg, tgtPosZMeter, smpPerDeg, smpPerSecHiRes, durationMs, ...
-            zeroDspTime, IPD, bPLOTmovie);
+            dspDeg = randomDsp / 60; % Angle from target to eye, radians
+            [LccdMV, RccdMV] = Iccd2BVLoomingS3D(LphtBffr, RphtBffr, PszXY, tgtSpdMeter, ...
+              tgtDirDeg, tgtPosZMeter, smpPerDeg, smpPerSecHiRes, durationMs, ...
+              zeroDspTime, dspDeg, IPD, bPLOTmovie);
         end
         [Lret(:,:,:,i), Rret(:,:,:,i), Lccd(:,:,:,i), Rccd(:,:,:,i)] = BVccd2BVret(LccdMV, ...
           RccdMV, durationMs, upK, lensInfo, bPLOTmovie);

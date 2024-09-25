@@ -1,0 +1,13 @@
+name: motion3d
+channels:
+  - defaults
+  - conda-forge
+  - pytorch
+dependencies:
+  - python=3.9
+  - einops=0.8.0
+  - matplotlib=3.8.2
+  - pip
+  - pip:
+    - git+https://github.com/dherrera1911/accuracy_maximization_analysis.git
+

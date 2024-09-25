@@ -25,7 +25,6 @@ sys.path.append('./code/')
 from auxiliary_functions import *
 import seaborn as sns
 import copy
-import einops as eo
 import os
 
 savePlots = True
@@ -300,73 +299,4 @@ for c in range(len(contrasts)):
     else:
         plt.show()
     
-
-
-
-# Initialize model
-ama = cl.AMA_emp(sAll=s, ctgInd=ctgInd, nFilt=10, respNoiseVar=respNoiseVar,
-        pixelCov=pixelNoiseVar, ctgVal=ctgVal,
-        samplesPerStim=samplesPerStim, nChannels=2)
-
-ama.assign_filter_values(fNew=trainingDict['filters'])
-ama.update_response_statistics()
-
-# Remove covariance noise
-ama.respCov = ama.respCovNoiseless.clone().detach()
-
-# Interpolate class statistics
-interpPoints = 11
-ama.respCov = covariance_interpolation(covariance=ama.respCov.detach(),
-                                       nPoints=interpPoints)
-ama.respMean = mean_interpolation(mean=ama.respMean.detach(),
-                                  nPoints=interpPoints)
-ama.ctgVal = torch.tensor(linear_interpolation(y=ctgVal, nPoints=interpPoints),
-                          dtype=torch.float32)
-
-### plot how one stimulus's posterior changes with contrast
-logContrasts = torch.linspace(start=0, end=-3, steps=200)
-contrasts = 10**logContrasts
-
-
-spd = 2
-# Find the ctgInd corresponding to this speed
-ctgIndSpd = torch.where(ctgVal == spd)[0]
-# Get the index of a stimulus with this speed
-stimInd = torch.where(ctgIndTst == ctgIndSpd)[0][0] + 11
-
-# Multiply by contrast
-stim = sTst[stimInd,:]
-stimCtr = eo.repeat(stim, 'x -> (c) x', c=len(contrasts))
-stimCtr = torch.einsum('ab,a->ab', stimCtr, contrasts)
-
-# Get the posteriors
-posteriors = ama.get_posteriors(s=stimCtr, addRespNoise=False).detach()
-# Get the estimates
-estimates = ama.get_estimates(s=stimCtr, addRespNoise=False).detach()
-
-# Plot the estimates
-fig, ax = plt.subplots()
-plt.scatter(contrasts, estimates, color='black')
-plt.xlabel('Multiplier')
-plt.ylabel('3D speed estimate (m/s)')
-plt.savefig(fname=f'{plotDirName}single_stim_contrast_estimate{stimInd}.png',
-          bbox_inches='tight', pad_inches=0)
-plt.close()
-
-# Plot the posteriors with graded color
-cmap = plt.get_cmap('viridis')
-norm = Normalize(vmin=torch.min(logContrasts), vmax=torch.max(logContrasts))
-colors = cmap(norm(logContrasts))
-fig, ax = plt.subplots()
-for i in range(len(contrasts)):
-    ax.plot(ama.ctgVal, posteriors[i,:], color=colors[i])
-plt.xlabel('Speed (m/s)')
-plt.ylabel('Posterior')
-# Add colormap
-ap.add_colorbar(ax=ax, ctgVal=logContrasts, colorMap=cmap,
-                 label='log-contrast', ticks=[-3, -2, -1, 0])
-plt.savefig(fname=f'{plotDirName}single_stim_contrast_posterior{stimInd}.png',
-          bbox_inches='tight', pad_inches=0)
-plt.close()
-
 

@@ -25,7 +25,6 @@ sys.path.append('./code/')
 from auxiliary_functions import *
 import copy
 import os
-import einops
 
 savePlots = True
 dnK = 2

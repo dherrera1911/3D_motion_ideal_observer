@@ -5,6 +5,26 @@ This is the code associated with the paper
 by [Daniel Herrera-Esposito](https://dherrera1911.github.io/) and
 [Johannes Burge](https://jburge.psych.upenn.edu/); *bioRxiv*, 2023
 
+## Getting started
+
+To run the analysis in the paper you need to:
+
+1. Clone this repository. For this you can run:
+```
+git clone https://github.com/dherrera1911/3D_motion_ideal_observer.git
+```
+2. Install the dependencies. The required packages are listed in the file `environment.yml`.
+If you have [Conda](https://docs.anaconda.com/miniconda/#quick-command-line-install) installed,
+you can create a new environment with the required packages by running:
+```
+conda env create -f environment.yml
+```
+Remember to activate the environment with:
+```
+conda activate motion3d
+```
+3. Download the data
+
 The code is organized into three main directories according to
 three different tasks:
 * `code/stimulus_synthesis/`: Generate naturalistic
